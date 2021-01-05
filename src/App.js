@@ -2,9 +2,11 @@ import React, { useEffect, useState } from "react";
 import "./App.css";
 import Modal from "@material-ui/core/Modal";
 import ImageUpload from "./Components/JS/ImageUpload";
-import { db, auth, storage } from "./Components/Firebase/Firebase.js";
+import { auth } from "./Components/Firebase/Firebase.js";
 import Post from "./Components/JS/Post";
 import { Button, Input, makeStyles } from "@material-ui/core";
+import Pusher from "pusher-js";
+import axios from "./Components/JS/axios.js";
 
 function getModalStyle() {
   const top = 50;
@@ -38,18 +40,11 @@ function App() {
   const [username, setusername] = useState("");
   const [password, setPassword] = useState("");
   const [user, setUser] = useState(null);
-  useEffect(() => {
-    db.collection("posts")
-      .orderBy("timestamp", "desc")
-      .onSnapshot((snapshot) => {
-        setposts(
-          snapshot.docs.map((doc) => ({
-            id: doc.id,
-            post: doc.data(),
-          }))
-        );
-      });
-  }, []);
+
+  const fetchPosts = async () =>
+    await axios.get("/sync").then((response) => {
+      setposts(response.data);
+    });
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((authuser) => {
@@ -65,6 +60,20 @@ function App() {
       unsubscribe();
     };
   }, [user, username]);
+
+  useEffect(() => {
+    const pusher = new Pusher("5e6a72fa1a1872b9d991", {
+      cluster: "ap2",
+    });
+    const channel = pusher.subscribe("posts");
+    channel.bind("inserted", (data) => {
+      fetchPosts();
+    });
+  }, []);
+
+  useEffect(() => {
+    fetchPosts();
+  }, []);
 
   const signup = (event) => {
     event.preventDefault();
@@ -167,14 +176,14 @@ function App() {
       </div>
 
       <div className="app__post">
-        {posts.map(({ id, post }) => (
+        {posts.map((post) => (
           <Post
-            key={id}
-            postId={id}
             user={user}
-            username={post.username}
+            key={post._id}
+            postId={post._id}
+            username={post.user}
             caption={post.caption}
-            imageUrl={post.imageUrl}
+            imageUrl={post.image}
           />
         ))}
       </div>

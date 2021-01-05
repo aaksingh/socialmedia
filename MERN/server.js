@@ -8,6 +8,13 @@ import dbModel from "./Components/Js/dbModel.js";
 
 const myapp = express();
 const port = process.env.PORT || 3030;
+const pusher = new Pusher({
+  appId: "1132785",
+  key: "5e6a72fa1a1872b9d991",
+  secret: "1e50e3d799eabd773ac3",
+  cluster: "ap2",
+  usetls: true,
+});
 
 //middlewares
 
@@ -25,6 +32,23 @@ mongoose.connect(connectionUrl, {
 
 mongoose.connection.once("open", () => {
   console.log("DB connected");
+  const changeStream = mongoose.connection.collection("posts").watch();
+  changeStream.on("change", (change) => {
+    console.log("change triggered on pusher");
+    console.log(change);
+    console.log("change ended");
+    if (change.operationType === "insert") {
+      console.log("Inside");
+      const postDetails = change.fullDocument;
+      pusher.trigger("posts", "inserted", {
+        user: postDetails.user,
+        caption: postDetails.caption,
+        image: postDetails.image,
+      });
+    } else {
+      console.log("unknow trigger from pusher");
+    }
+  });
 });
 // api routes      api end point
 myapp.get("/", (req, res) => res.status(200).send("hello Golu"));
