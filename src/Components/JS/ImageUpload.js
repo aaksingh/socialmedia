@@ -3,10 +3,12 @@ import firebase from "firebase";
 import React, { useState } from "react";
 import { db, auth, storage } from "../Firebase/Firebase";
 import "../CSS/ImageUpload.css";
+import axios from "./axios.js";
 function ImageUpload({ username }) {
   const [caption, setCaption] = useState("");
   const [image, setImage] = useState(null);
   const [progress, setProgress] = useState(0);
+  const [url, setUrl] = useState("");
 
   const handlechange = (e) => {
     if (e.target.files[0]) {
@@ -33,6 +35,13 @@ function ImageUpload({ username }) {
           .child(image.name)
           .getDownloadURL()
           .then((url) => {
+            setUrl(url);
+
+            axios.post("/upload", {
+              caption: caption,
+              user: username,
+              image: url,
+            });
             db.collection("posts").add({
               timestamp: firebase.firestore.FieldValue.serverTimestamp(),
               caption: caption,
