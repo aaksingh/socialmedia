@@ -56,13 +56,6 @@ function App() {
       if (authuser) {
         console.log(authuser);
         setUser(authuser);
-
-        // if (authuser.displayName) {
-        // } else {
-        //   return authuser.updateProfile({
-        //     displayName: username,
-        //   });
-        // }
       } else {
         setUser(null);
       }
@@ -72,6 +65,7 @@ function App() {
       unsubscribe();
     };
   }, [user, username]);
+
   const signup = (event) => {
     event.preventDefault();
     auth
